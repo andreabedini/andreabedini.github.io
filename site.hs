@@ -88,6 +88,13 @@ main = hakyll $ do
             >>= loadAndApplyTemplate "templates/default.html" defaultContext
             >>= cleanIndexUrls
 
+    match "404.markdown" $ do
+        route $ setExtension "html"
+        compile $ pandocCompiler
+            >>= loadAndApplyTemplate "templates/page.html"    defaultContext
+            >>= loadAndApplyTemplate "templates/default.html" defaultContext
+            >>= cleanIndexUrls
+
     match (fromList pages) $ do
         route     cleanRoute
         compile $ pandocCompiler
