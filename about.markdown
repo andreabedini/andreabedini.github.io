@@ -1,4 +1,4 @@
-![](/images/avatar.png){.fr .w4}
+![](/images/avatar.svg){.fr .w4}
 
 About me {.f1}
 ========
