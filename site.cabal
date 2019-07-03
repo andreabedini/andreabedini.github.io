@@ -1,0 +1,13 @@
+cabal-version:       >=1.10
+name:                www-andreabedini-com
+version:             0.1.0.0
+author:              Andrea Bedini
+maintainer:          andrea@andreabedini.com
+build-type:          Simple
+
+executable www-andreabedini-com
+  main-is:             Main.hs
+  build-depends:       base >=4.12 && <4.13
+                     , hakyll
+                     , filepath
+  default-language:    Haskell2010

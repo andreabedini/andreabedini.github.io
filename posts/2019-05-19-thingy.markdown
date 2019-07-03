@@ -1,0 +1,184 @@
+---
+title: Look, I have made a thingy!
+---
+
+An applicative instance for lists.
+
+[QuickCheck](http://hackage.haskell.org/package/QuickCheck) is a library
+for testing of program properties. It can tests the specified properties
+hold for a large number of randomly generated cases. When a counterexample
+is found, QuickCheck also tries to "shrink" the counterexample to a minimal
+one. The generation and shrinking of values is controlled through the
+`Arbitrary` type class.
+
+I while ago I was implementing a shrink for a data structure with
+additional invariants and I needed a way to "push" a particular shrink
+function (of type `a -> [a]`) inside a nested structure and "pull the
+results out" correctly.
+
+Let me explain. I will use `m :: Map k a` as an example.
+
+The default implementation of `shrink` for `Map k a` acts on both the keys
+and the values. In my case I wanted to only act on the values and do so
+with a special shrink function `myShrink :: a -> [a]` I had written.
+
+`Map k` has a `Traversable` instance, so my first thought, purely inspired
+by the types, was to write:
+
+```
+traverse myShrink m
+```
+
+This has the desired type `[Map k a]` but, it turns out, it's the wrong
+think to do!
+
+
+Shrinking
+---------
+
+The QuickCheck documentation has a few paragraphs describing how to
+implement correctly the function `shrink` for your `Arbitrary` instance.
+
+What follow is an extract from the documentation of [`Arbitrary`](http://hackage.haskell.org/package/QuickCheck-2.13.1/docs/Test-QuickCheck-Arbitrary.html).
+
+> Most implementations of shrink should try at least three things:
+>
+> 1. Shrink a term to any of its immediate subterms. You can use subterms to do
+> this.
+> 2. Recursively apply shrink to all immediate subterms. You can use
+> recursivelyShrink to do this.
+> 3. Type-specific shrinkings such as replacing a constructor by a simpler
+> constructor.
+>
+> For example, suppose we have the following implementation of binary trees:
+>
+> ```
+> data Tree a = Nil | Branch a (Tree a) (Tree a)
+> ```
+>
+> We can then define shrink as follows:
+>
+> ```
+> shrink Nil = []
+> shrink (Branch x l r) =
+>   -- shrink Branch to Nil
+>   [Nil] ++
+>   -- shrink to subterms
+>   [l, r] ++
+>   -- recursively shrink subterms
+>   [Branch x' l' r' | (x', l', r') <- shrink (x, l, r)]
+> ```
+>
+> There are a couple of subtleties here:
+>
+> QuickCheck tries the shrinking candidates in the order they appear in the list,
+> so we put more aggressive shrinking steps (such as replacing the whole tree by
+> Nil) before smaller ones (such as recursively shrinking the subtrees).
+>
+> It is tempting to write the last line as
+> ```
+> [Branch x' l' r' | x' <- shrink x, l' <- shrink l,
+>                    r' <- shrink r]
+> ```
+> but this is the wrong thing! It will force QuickCheck to shrink x, l and r
+> in tandem, and shrinking will stop once one of the three is fully shrunk.
+
+The meaning of "in tandem" in the last sentence was a bit vague for me so I
+had to unpack it a little bit to understand what the point was.
+
+Let's forget about the node value `x` and assume shrinking `l` and `r`
+gives three values each.
+
+```
+shrink l = [l1, l2, l3]
+shrink r = [r1, r2, r3]
+```
+
+What the last sentence above is saying is that the shrink function should
+not produce the sequence
+
+```
+[ Branch l1 r1
+, Branch l1 r2
+, Branch l1 r3
+, Branch l2 r1
+, Branch l2 r2
+, Branch l2 r3
+, Branch l3 r1
+, Branch l3 r2
+, Branch l3 r3
+]
+```
+
+but instead
+
+```
+[ Branch l r1
+, Branch l r3
+, Branch l r3
+, Branch l1 r
+, Branch l2 r
+, Branch l3 r
+]
+```
+
+I can only guess that by "in tandem" the authors of QuickCheck meant
+terms where both sides are shrunk (e.g. `Branch l2 r3`).
+
+The desired behaviour is hidden in the shrink implementation for tuples,
+that is in `shrink (l, r)`. Indeed:
+
+```
+λ> import Test.QuickCheck
+λ> shrink 'd'
+"abc"
+λ> shrink ('d', 'd')
+[('a','d'),('b','d'),('c','d'),('d','a'),('d','b'),('d','c')]
+```
+
+Looking for the applicative
+---------------------------
+
+The `Applicative` instance for `[]` is the monadic one, which makes
+`traverse myShrink` behave similarly to the list comprehension mentioned in
+the QuickCheck documentation.
+
+this led me to think there might be a more suitable applicative instance
+for lists, different from the monadic and the zipper ones.
+
+# Thingy
+
+```
+newtype Thingy a = Thingy { unThingy :: [a] }
+  deriving (Eq, Show, Functor)
+```
+
+```
+λ> mapM_ print $ unThingy . sequenceA $ (Thingy . shrink) <$> m
+fromList [(1,'a'),(2,'d')]
+fromList [(1,'b'),(2,'d')]
+fromList [(1,'c'),(2,'d')]
+fromList [(1,'d'),(2,'a')]
+fromList [(1,'d'),(2,'b')]
+fromList [(1,'d'),(2,'c')]
+```
+
+actually
+```
+λ> mapM_ print $ tail . unThingy . sequenceA $ (\x -> Thingy . (x:) $ shrink x) <$> m
+```
+
+
+```
+instance Applicative Thingy where
+
+  pure x = Thingy [x]
+
+  (Thingy     _ ) <*> (Thingy []) = Thingy []
+  (Thingy     []) <*> (Thingy _ ) = Thingy []
+
+  (Thingy (f:fs)) <*> (Thingy (x:xs))
+    = Thingy $ f x : [ f' x | f' <- fs ] ++ [ f x | x <- xs ]
+```
+
+

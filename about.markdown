@@ -1,14 +1,22 @@
-![](/images/avatar.svg){.fr .w4}
-
-About me {.f1}
-========
+---
+title: About me
+face: true
+---
 
 Experience {#experience .f2 .mt5}
-==========
+----------
+
+::: {.mt4}
+[[Fortescue](https://www.fmgl.com.au){.link .hover-bg-white}]{.b .mr2}
+April
+2019 -- now
+
+Autonomy Systems Architect
+:::
 
 ::: {.mt4}
 [[KZN Group](https://kzn.io){.link .hover-bg-white}]{.b .mr2} August
-2017 -- now
+2017 -- April 2019
 
 Data Scientist
 :::
@@ -48,7 +56,7 @@ Unix System Administrator
 :::
 
 Education {#education .f2 .mt5}
-=========
+---------
 
 ::: {.mt4}
 [Università degli Studi di Milano]{.b} 2010
