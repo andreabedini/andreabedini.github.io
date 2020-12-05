@@ -2,12 +2,8 @@ a {
   color: inherit;
 }
 
-.bg-crazy-yellow {
-  background: #FFFF00;
-}
-
-.dt {
-  display: inherit;
+.my-face {
+  transform: rotate(-15deg);
 }
 
 .code, code {

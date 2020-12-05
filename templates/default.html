@@ -6,9 +6,10 @@
   <link rel="stylesheet" href="/css/tachyons.min.css">
   <link rel="stylesheet" href="/css/style.css">
   <body class="pa4-l avenir bg-white">
-    <div class="pa3 pv6-l ph0-l black bg-crazy-yellow min-vh-100">
-      <div class="center mw7">
+    <div class="pa3 pv6-l ph0-l black bg-yellow min-vh-100">
+      <div class="center mw8">
         $partial("templates/nav.html")$
+        $if(face)$<img alt="my face" src="/images/avatar.svg" class="fr w4 my-face">$endif$
         $body$
         $partial("templates/footer.html")$
       </div>
