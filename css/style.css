@@ -10,6 +10,13 @@ a {
   font-family: monospace;
 }
 
+/* fix clash between pandoc syntax highlighting and tachions */
+.dt { display: inherit; }
+
+@media screen {
+  div.sourceCode { overflow: visible; }
+}
+
 blockquote {
   margin-left: 0;
   margin-top: 0;

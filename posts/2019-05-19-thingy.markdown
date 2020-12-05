@@ -25,7 +25,7 @@ with a special shrink function `myShrink :: a -> [a]` I had written.
 `Map k` has a `Traversable` instance, so my first thought, purely inspired
 by the types, was to write:
 
-```
+```haskell
 traverse myShrink m
 ```
 
@@ -52,13 +52,13 @@ What follow is an extract from the documentation of [`Arbitrary`](http://hackage
 >
 > For example, suppose we have the following implementation of binary trees:
 >
-> ```
+> ```haskell
 > data Tree a = Nil | Branch a (Tree a) (Tree a)
 > ```
 >
 > We can then define shrink as follows:
 >
-> ```
+> ```haskell
 > shrink Nil = []
 > shrink (Branch x l r) =
 >   -- shrink Branch to Nil
@@ -76,7 +76,7 @@ What follow is an extract from the documentation of [`Arbitrary`](http://hackage
 > Nil) before smaller ones (such as recursively shrinking the subtrees).
 >
 > It is tempting to write the last line as
-> ```
+> ```haskell
 > [Branch x' l' r' | x' <- shrink x, l' <- shrink l,
 >                    r' <- shrink r]
 > ```
@@ -89,7 +89,7 @@ had to unpack it a little bit to understand what the point was.
 Let's forget about the node value `x` and assume shrinking `l` and `r`
 gives three values each.
 
-```
+```haskell
 shrink l = [l1, l2, l3]
 shrink r = [r1, r2, r3]
 ```
@@ -97,7 +97,7 @@ shrink r = [r1, r2, r3]
 What the last sentence above is saying is that the shrink function should
 not produce the sequence
 
-```
+```haskell
 [ Branch l1 r1
 , Branch l1 r2
 , Branch l1 r3
@@ -112,7 +112,7 @@ not produce the sequence
 
 but instead
 
-```
+```haskell
 [ Branch l r1
 , Branch l r3
 , Branch l r3
@@ -128,7 +128,7 @@ terms where both sides are shrunk (e.g. `Branch l2 r3`).
 The desired behaviour is hidden in the shrink implementation for tuples,
 that is in `shrink (l, r)`. Indeed:
 
-```
+```haskell
 λ> import Test.QuickCheck
 λ> shrink 'd'
 "abc"
@@ -148,12 +148,12 @@ for lists, different from the monadic and the zipper ones.
 
 # Thingy
 
-```
+```haskell
 newtype Thingy a = Thingy { unThingy :: [a] }
   deriving (Eq, Show, Functor)
 ```
 
-```
+```haskell
 λ> mapM_ print $ unThingy . sequenceA $ (Thingy . shrink) <$> m
 fromList [(1,'a'),(2,'d')]
 fromList [(1,'b'),(2,'d')]
@@ -164,12 +164,12 @@ fromList [(1,'d'),(2,'c')]
 ```
 
 actually
-```
+```haskell
 λ> mapM_ print $ tail . unThingy . sequenceA $ (\x -> Thingy . (x:) $ shrink x) <$> m
 ```
 
 
-```
+```haskell
 instance Applicative Thingy where
 
   pure x = Thingy [x]
