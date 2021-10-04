@@ -7,6 +7,8 @@ to read about my experience in [research](#research) and
 [teaching](#teaching). A list of my [publications](#publications) is
 available at the bottom of the page.
 
+![ORCID logo](https://orcid.org/sites/default/files/images/orcid_16x16.png) <https://orcid.org/0000-0003-4881-1606>
+
 Research
 --------
 
@@ -110,10 +112,6 @@ produced and marked assignment and exam questions.
 
 Publications
 ------------
-
-[![ORCID
-logo](http://orcid.org/sites/default/files/images/orcid_16x16.png){width="16"
-height="16"}](http://orcid.org) <http://orcid.org/0000-0003-4881-1606>
 
 1.  [L Morawska, P K Thai, X Liu, A Asumadu-Sakyi, G Ayoko, A Bartonova, A
     Bedini, F Chai, B Christensen, M Dunbabin, J Gao, G S W  Hagler, R

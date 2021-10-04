@@ -39,36 +39,38 @@ main = do
         route   idRoute
         compile compressCssCompiler
 
-    match "posts/*" $ do
+    match postsPattern $ do
         route     cleanRoute
         compile $ pandocCompiler
             >>= loadAndApplyTemplate "templates/post.html"    postCtx
             >>= loadAndApplyTemplate "templates/default.html" postCtx
             >>= cleanIndexUrls
 
-    create ["writings.html"] $ do
-        route     cleanRoute
+    match "blog.md" $ do
+        route cleanRoute
         compile $ do
-            posts <- recentFirst =<< loadAll "posts/*"
-            let writingCtx =
-                  listField "posts" postCtx (return posts) <>
-                  constField "title" "Writings"            <>
-                  defaultContext
+            posts <- recentPosts
 
-            makeItem ""
-                >>= loadAndApplyTemplate "templates/writings.html" writingCtx
-                >>= loadAndApplyTemplate "templates/default.html"  writingCtx
-                >>= cleanIndexUrls
+            let indexCtx =
+                  listField "posts" postCtx (return posts)
+                  <> defaultContext
+
+            pandocCompiler
+              >>= applyAsTemplate indexCtx
+              >>= loadAndApplyTemplate "templates/page.html"    indexCtx
+              >>= loadAndApplyTemplate "templates/default.html" indexCtx
+              >>= cleanIndexUrls
 
     match "index.md" $ do
         route $ setExtension "html"
-        compile $ pandocCompiler
-            >>= loadAndApplyTemplate "templates/page.html"    defaultContext
-            >>= loadAndApplyTemplate "templates/default.html" defaultContext
-            >>= cleanIndexUrls
+        compile $ do
+            pandocCompiler
+              >>= loadAndApplyTemplate "templates/page.html"    defaultContext
+              >>= loadAndApplyTemplate "templates/default.html" defaultContext
+              >>= cleanIndexUrls
 
     match "*.md" $ do
-        route     cleanRoute
+        route cleanRoute
         compile $ pandocCompiler
             >>= loadAndApplyTemplate "templates/page.html"    defaultContext
             >>= loadAndApplyTemplate "templates/default.html" defaultContext
@@ -85,6 +87,12 @@ main = do
 
 
 --------------------------------------------------------------------------------
+
+postsPattern :: Pattern
+postsPattern = "posts/*"
+
+recentPosts :: Compiler [Item String]
+recentPosts = loadAll postsPattern >>= recentFirst
 
 postCtx :: Context String
 postCtx =

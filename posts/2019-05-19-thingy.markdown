@@ -30,8 +30,8 @@ by the types, was to write:
 traverse myShrink m
 ```
 
-This has the desired type `[Map k a]` but, it turns out, it's the wrong
-think to do!
+This has the desired type `[Map k a]` but, it turns out, the result is not
+what I expected!
 
 
 Shrinking
@@ -144,7 +144,7 @@ The `Applicative` instance for `[]` is the monadic one, which makes
 `traverse myShrink` behave similarly to the list comprehension mentioned in
 the QuickCheck documentation.
 
-this led me to think there might be a more suitable applicative instance
+This led me to think there might be a more suitable applicative instance
 for lists, different from the monadic and the zipper ones.
 
 # Thingy
@@ -175,8 +175,8 @@ instance Applicative Thingy where
 
   pure x = Thingy [x]
 
-  (Thingy     _ ) <*> (Thingy []) = Thingy []
-  (Thingy     []) <*> (Thingy _ ) = Thingy []
+  (Thingy _ ) <*> (Thingy []) = Thingy []
+  (Thingy []) <*> (Thingy _ ) = Thingy []
 
   (Thingy (f:fs)) <*> (Thingy (x:xs))
     = Thingy $ f x : [ f' x | f' <- fs ] ++ [ f x | x <- xs ]
