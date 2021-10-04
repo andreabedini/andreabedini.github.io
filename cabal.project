@@ -1,4 +1,5 @@
-packages: *.cabal
+packages:
+  *.cabal
 
 package hakyll
-  flags: -watchServer -previewServer
+  flags: +watchServer +previewServer

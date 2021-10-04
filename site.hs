@@ -29,6 +29,7 @@ cleanIndex url
 main :: IO ()
 main = do
   E.setLocaleEncoding E.utf8
+
   hakyll $ do
     match "images/*" $ do
         route   idRoute
@@ -45,35 +46,35 @@ main = do
             >>= loadAndApplyTemplate "templates/default.html" postCtx
             >>= cleanIndexUrls
 
-    create ["archive.html"] $ do
+    create ["writings.html"] $ do
         route     cleanRoute
         compile $ do
             posts <- recentFirst =<< loadAll "posts/*"
-            let archiveCtx =
+            let writingCtx =
                   listField "posts" postCtx (return posts) <>
-                  constField "title" "Archives"            <>
+                  constField "title" "Writings"            <>
                   defaultContext
 
             makeItem ""
-                >>= loadAndApplyTemplate "templates/archive.html" archiveCtx
-                >>= loadAndApplyTemplate "templates/default.html" archiveCtx
+                >>= loadAndApplyTemplate "templates/writings.html" writingCtx
+                >>= loadAndApplyTemplate "templates/default.html"  writingCtx
                 >>= cleanIndexUrls
 
-    match "index.markdown" $ do
+    match "index.md" $ do
         route $ setExtension "html"
         compile $ pandocCompiler
             >>= loadAndApplyTemplate "templates/page.html"    defaultContext
             >>= loadAndApplyTemplate "templates/default.html" defaultContext
             >>= cleanIndexUrls
 
-    match "*.markdown" $ do
+    match "*.md" $ do
         route     cleanRoute
         compile $ pandocCompiler
             >>= loadAndApplyTemplate "templates/page.html"    defaultContext
             >>= loadAndApplyTemplate "templates/default.html" defaultContext
             >>= cleanIndexUrls
 
-    match "404.markdown" $ do
+    match "404.md" $ do
         route $ setExtension "html"
         compile $ pandocCompiler
             >>= loadAndApplyTemplate "templates/page.html"    defaultContext
@@ -84,6 +85,7 @@ main = do
 
 
 --------------------------------------------------------------------------------
+
 postCtx :: Context String
 postCtx =
     dateField "date" "%B %e, %Y" <>

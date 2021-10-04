@@ -2,12 +2,12 @@ a {
   color: inherit;
 }
 
-.my-face {
-  transform: rotate(-15deg);
+a:hover {
+  background: white;
 }
 
-.code, code {
-  font-family: monospace;
+.my-face {
+  transform: rotate(-15deg);
 }
 
 /* fix clash between pandoc syntax highlighting and tachions */
@@ -24,4 +24,9 @@ blockquote {
   border-left-style: solid;
   border-color: #ff6300;
   border-width: 0.25rem;
+  font-size: smaller;
+}
+
+div.sourceCode {
+  font-size: smaller;
 }

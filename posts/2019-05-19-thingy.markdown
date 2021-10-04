@@ -1,5 +1,6 @@
 ---
 title: Look, I have made a thingy!
+date: 2019-05-19
 ---
 
 An applicative instance for lists.

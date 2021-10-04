@@ -2,8 +2,10 @@
 title: Academia
 ---
 
-This page collects details about my previous life in academia. Scroll down
-to find my experience in [teaching](#teaching) and the list of [publications](#publications).
+This page collects details about my life in academia. Scroll down
+to read about my experience in [research](#research) and
+[teaching](#teaching). A list of my [publications](#publications) is
+available at the bottom of the page.
 
 Research
 --------
@@ -88,7 +90,7 @@ Teaching
 During my time at The University of Melbourne I taught the following
 subjects.
 
-### 2014 [Experimental Mathematics (MAST90053)](https://handbook.unimelb.edu.au/view/2014/MAST90053)
+### 2014 Experimental Mathematics (MAST90053)
 
 Modern computers have developed far beyond being great devices for numerical
 simulations or tedious but straightforward algebra. _Experimental Mathematics_
@@ -96,10 +98,10 @@ covers some of the great advances made in using computers to algorithmically
 discover and prove nontrivial mathematical theorems.
 
 I was lecturer in charge for this subject. I produced a revised set of lecture
-notes (available [on GitHub](https://github.com/andreabedini/experimental-mathematics)),
+notes (available [on GitHub](https://github.com/andreabedini/experimental-mathematics#readme)),
 Mathematica notebooks, assignments and exam questions.
 
-### 2012 and 2013 [Calculus 2 (MAST10006)](https://handbook.unimelb.edu.au/view/2013/MAST10006)
+### 2012 and 2013 Calculus 2 (MAST10006)
 
 _Calculus 2_ extends knowledge of calculus from school. I was part of a
 team of four lecturers. I delivered lectures and practice classes. I

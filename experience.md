@@ -1,15 +1,13 @@
 ---
-title: About me
-face: true
+title: Experience
 ---
-
-Experience {#experience .f2 .mt5}
-----------
 
 ::: {.mt4}
 [[Fortescue](https://www.fmgl.com.au){.link .hover-bg-white}]{.b .mr2}
 April
 2019 -- now
+
+Specialist Data Scientist
 
 Autonomy Systems Architect
 :::
