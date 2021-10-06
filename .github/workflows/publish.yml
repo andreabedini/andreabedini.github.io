@@ -1,4 +1,4 @@
-name: Haskell CI
+name: Publish
 
 on:
   push:
@@ -33,11 +33,11 @@ jobs:
         cabal update
         cabal build --only-dependencies --enable-tests --enable-benchmarks
 
-    - name: Build website
+    - name: Build
       run: cabal run site -- build
-      
-    - name: Archive production artifacts
-      uses: actions/upload-artifact@v2
+
+    - name: Publish
+      uses: peaceiris/actions-gh-pages@v3
       with:
-        name: site
-        path: _site
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: _site
