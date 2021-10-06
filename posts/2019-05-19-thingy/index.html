@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+  <meta charset="utf-8" />
+  <title>Andrea Bedini - About</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/css/syntax.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <body>
+    <div>
+      <div>
+        <nav>
+  <a href="/" title="home">Home</a>
+  <span>·</span>
+  <a href="/cv/" title="cv">CV</a>
+  <span>·</span>
+  <a href="/academia/" title="Academia">Academia</a>
+  <!-- <span>·</span> -->
+  <!-- <a href="/blog/" title="Blog">Blog</a> -->
+  <a style="float:right;" href="/" title="Home">// andreabedini</a>
+</nav>
+
+        <article>
+<h1>Look, I have made a thingy!</h1>
+<p>May 19, 2019</p>
+
+<p>An applicative instance for lists.</p>
+<p><a href="http://hackage.haskell.org/package/QuickCheck">QuickCheck</a> is a library for testing of program properties. It can tests the specified properties hold for a large number of randomly generated cases. When a counterexample is found, QuickCheck also tries to “shrink” the counterexample to a minimal one. The generation and shrinking of values is controlled through the <code>Arbitrary</code> type class.</p>
+<p>I while ago I was implementing a shrink for a data structure with additional invariants and I needed a way to “push” a particular shrink function (of type <code>a -&gt; [a]</code>) inside a nested structure and “pull the results out” correctly.</p>
+<p>Let me explain. I will use <code>m :: Map k a</code> as an example.</p>
+<p>The default implementation of <code>shrink</code> for <code>Map k a</code> acts on both the keys and the values. In my case I wanted to only act on the values and do so with a special shrink function <code>myShrink :: a -&gt; [a]</code> I had written.</p>
+<p><code>Map k</code> has a <code>Traversable</code> instance, so my first thought, purely inspired by the types, was to write:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">traverse</span> myShrink m</span></code></pre></div>
+<p>This has the desired type <code>[Map k a]</code> but, it turns out, the result is not what I expected!</p>
+<h2 id="shrinking">Shrinking</h2>
+<p>The QuickCheck documentation has a few paragraphs describing how to implement correctly the function <code>shrink</code> for your <code>Arbitrary</code> instance.</p>
+<p>What follow is an extract from the documentation of <a href="http://hackage.haskell.org/package/QuickCheck-2.13.1/docs/Test-QuickCheck-Arbitrary.html"><code>Arbitrary</code></a>.</p>
+<blockquote>
+<p>Most implementations of shrink should try at least three things:</p>
+<ol type="1">
+<li>Shrink a term to any of its immediate subterms. You can use subterms to do this.</li>
+<li>Recursively apply shrink to all immediate subterms. You can use recursivelyShrink to do this.</li>
+<li>Type-specific shrinkings such as replacing a constructor by a simpler constructor.</li>
+</ol>
+<p>For example, suppose we have the following implementation of binary trees:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Tree</span> a <span class="ot">=</span> <span class="dt">Nil</span> <span class="op">|</span> <span class="dt">Branch</span> a (<span class="dt">Tree</span> a) (<span class="dt">Tree</span> a)</span></code></pre></div>
+<p>We can then define shrink as follows:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>shrink <span class="dt">Nil</span> <span class="ot">=</span> []</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>shrink (<span class="dt">Branch</span> x l r) <span class="ot">=</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="co">-- shrink Branch to Nil</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  [<span class="dt">Nil</span>] <span class="op">++</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="co">-- shrink to subterms</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  [l, r] <span class="op">++</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="co">-- recursively shrink subterms</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  [<span class="dt">Branch</span> x' l' r' <span class="op">|</span> (x', l', r') <span class="ot">&lt;-</span> shrink (x, l, r)]</span></code></pre></div>
+<p>There are a couple of subtleties here:</p>
+<p>QuickCheck tries the shrinking candidates in the order they appear in the list, so we put more aggressive shrinking steps (such as replacing the whole tree by Nil) before smaller ones (such as recursively shrinking the subtrees).</p>
+<p>It is tempting to write the last line as</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>[<span class="dt">Branch</span> x' l' r' <span class="op">|</span> x' <span class="ot">&lt;-</span> shrink x, l' <span class="ot">&lt;-</span> shrink l,</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>                   r' <span class="ot">&lt;-</span> shrink r]</span></code></pre></div>
+<p>but this is the wrong thing! It will force QuickCheck to shrink x, l and r in tandem, and shrinking will stop once one of the three is fully shrunk.</p>
+</blockquote>
+<p>The meaning of “in tandem” in the last sentence was a bit vague for me so I had to unpack it a little bit to understand what the point was.</p>
+<p>Let’s forget about the node value <code>x</code> and assume shrinking <code>l</code> and <code>r</code> gives three values each.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>shrink l <span class="ot">=</span> [l1, l2, l3]</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>shrink r <span class="ot">=</span> [r1, r2, r3]</span></code></pre></div>
+<p>What the last sentence above is saying is that the shrink function should not produce the sequence</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>[ <span class="dt">Branch</span> l1 r1</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>, <span class="dt">Branch</span> l1 r2</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>, <span class="dt">Branch</span> l1 r3</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>, <span class="dt">Branch</span> l2 r1</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>, <span class="dt">Branch</span> l2 r2</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>, <span class="dt">Branch</span> l2 r3</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>, <span class="dt">Branch</span> l3 r1</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>, <span class="dt">Branch</span> l3 r2</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>, <span class="dt">Branch</span> l3 r3</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>]</span></code></pre></div>
+<p>but instead</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>[ <span class="dt">Branch</span> l r1</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>, <span class="dt">Branch</span> l r3</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>, <span class="dt">Branch</span> l r3</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>, <span class="dt">Branch</span> l1 r</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>, <span class="dt">Branch</span> l2 r</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>, <span class="dt">Branch</span> l3 r</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>]</span></code></pre></div>
+<p>I can only guess that by “in tandem” the authors of QuickCheck meant terms where both sides are shrunk (e.g. <code>Branch l2 r3</code>).</p>
+<p>The desired behaviour is hidden in the shrink implementation for tuples, that is in <code>shrink (l, r)</code>. Indeed:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>λ<span class="op">&gt;</span> <span class="kw">import</span> <span class="dt">Test.QuickCheck</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>λ<span class="op">&gt;</span> shrink <span class="ch">'d'</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="st">&quot;abc&quot;</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>λ<span class="op">&gt;</span> shrink (<span class="ch">'d'</span>, <span class="ch">'d'</span>)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>[(<span class="ch">'a'</span>,<span class="ch">'d'</span>),(<span class="ch">'b'</span>,<span class="ch">'d'</span>),(<span class="ch">'c'</span>,<span class="ch">'d'</span>),(<span class="ch">'d'</span>,<span class="ch">'a'</span>),(<span class="ch">'d'</span>,<span class="ch">'b'</span>),(<span class="ch">'d'</span>,<span class="ch">'c'</span>)]</span></code></pre></div>
+<h2 id="looking-for-the-applicative">Looking for the applicative</h2>
+<p>The <code>Applicative</code> instance for <code>[]</code> is the monadic one, which makes <code>traverse myShrink</code> behave similarly to the list comprehension mentioned in the QuickCheck documentation.</p>
+<p>This led me to think there might be a more suitable applicative instance for lists, different from the monadic and the zipper ones.</p>
+<h1 id="thingy">Thingy</h1>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">newtype</span> <span class="dt">Thingy</span> a <span class="ot">=</span> <span class="dt">Thingy</span> {<span class="ot"> unThingy ::</span> [a] }</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Show</span>, <span class="dt">Functor</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>λ<span class="op">&gt;</span> <span class="fu">mapM_</span> <span class="fu">print</span> <span class="op">$</span> unThingy <span class="op">.</span> <span class="fu">sequenceA</span> <span class="op">$</span> (<span class="dt">Thingy</span> <span class="op">.</span> shrink) <span class="op">&lt;$&gt;</span> m</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>fromList [(<span class="dv">1</span>,<span class="ch">'a'</span>),(<span class="dv">2</span>,<span class="ch">'d'</span>)]</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>fromList [(<span class="dv">1</span>,<span class="ch">'b'</span>),(<span class="dv">2</span>,<span class="ch">'d'</span>)]</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>fromList [(<span class="dv">1</span>,<span class="ch">'c'</span>),(<span class="dv">2</span>,<span class="ch">'d'</span>)]</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>fromList [(<span class="dv">1</span>,<span class="ch">'d'</span>),(<span class="dv">2</span>,<span class="ch">'a'</span>)]</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>fromList [(<span class="dv">1</span>,<span class="ch">'d'</span>),(<span class="dv">2</span>,<span class="ch">'b'</span>)]</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>fromList [(<span class="dv">1</span>,<span class="ch">'d'</span>),(<span class="dv">2</span>,<span class="ch">'c'</span>)]</span></code></pre></div>
+<p>actually</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>λ<span class="op">&gt;</span> <span class="fu">mapM_</span> <span class="fu">print</span> <span class="op">$</span> <span class="fu">tail</span> <span class="op">.</span> unThingy <span class="op">.</span> <span class="fu">sequenceA</span> <span class="op">$</span> (\x <span class="ot">-&gt;</span> <span class="dt">Thingy</span> <span class="op">.</span> (x<span class="op">:</span>) <span class="op">$</span> shrink x) <span class="op">&lt;$&gt;</span> m</span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Applicative</span> <span class="dt">Thingy</span> <span class="kw">where</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pure</span> x <span class="ot">=</span> <span class="dt">Thingy</span> [x]</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>  (<span class="dt">Thingy</span> _ ) <span class="op">&lt;*&gt;</span> (<span class="dt">Thingy</span> []) <span class="ot">=</span> <span class="dt">Thingy</span> []</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>  (<span class="dt">Thingy</span> []) <span class="op">&lt;*&gt;</span> (<span class="dt">Thingy</span> _ ) <span class="ot">=</span> <span class="dt">Thingy</span> []</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>  (<span class="dt">Thingy</span> (f<span class="op">:</span>fs)) <span class="op">&lt;*&gt;</span> (<span class="dt">Thingy</span> (x<span class="op">:</span>xs))</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>    <span class="ot">=</span> <span class="dt">Thingy</span> <span class="op">$</span> f x <span class="op">:</span> [ f' x <span class="op">|</span> f' <span class="ot">&lt;-</span> fs ] <span class="op">++</span> [ f x <span class="op">|</span> x <span class="ot">&lt;-</span> xs ]</span></code></pre></div>
+</article>
+
+        <footer>
+  <ul>
+    <li><a href="https://github.com/andreabedini">GitHub</a></li>
+    <li><a href="https://www.linkedin.com/in/bediniandrea/">LinkedIn</a></li>
+    <li><a href="mailto:andrea@andreabedini.com">Email</a></li>
+  </ul>
+  <img style="width: 2rem; float: right; margin-right: 2rem;" alt src="/images/avatar.svg" />
+</footer>
+
+      </div>
+    </div>
+  </body>
+</html>
