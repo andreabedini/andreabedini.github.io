@@ -4,8 +4,11 @@ title: Curriculum Vitae
 
 ## Experience
 
+**[Tweag](https://tweag.io)**
+  ~ 2022 -- present, *Software Engineer*
+
 **[Fortescue Metals Group](https://www.fmgl.com.au)**
-  ~ 2020 -- present, *Specialist Data Scientist*
+  ~ 2020 -- 2021, *Specialist Data Scientist*
   ~ 2019, *Autonomy Systems Architect*
 
 **[KZN Group](https://kzn.io)**
